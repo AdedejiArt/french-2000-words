@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>French Vocabulary Quiz</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1a2e;
+    --ink-muted: #6b6b8a;
+    --ink-faint: #c4c4d4;
+    --cream: #faf8f4;
+    --cream-dark: #f0ece4;
+    --french-blue: #003189;
+    --french-red: #c1001f;
+    --success-bg: #e8f5e9;
+    --success-text: #1b5e20;
+    --error-bg: #fdecea;
+    --error-text: #7f1d1d;
+    --radius: 12px;
+    --shadow: 0 2px 20px rgba(26,26,46,0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--ink); min-height: 100vh; }
+
+  .header-stripe { height: 6px; background: linear-gradient(90deg, var(--french-blue) 33.3%, white 33.3%, white 66.6%, var(--french-red) 66.6%); }
+  header { background: var(--french-blue); color: white; }
+  .header-inner { max-width: 760px; margin: 0 auto; padding: 2rem 1.5rem 1.8rem; display: flex; align-items: center; gap: 1.2rem; }
+  .flag { width: 40px; height: 27px; border-radius: 3px; overflow: hidden; display: flex; flex-shrink: 0; box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
+  .flag div { flex: 1; }
+  .f-blue { background: var(--french-blue); }
+  .f-white { background: white; }
+  .f-red { background: var(--french-red); }
+  header h1 { font-family: 'Playfair Display', serif; font-size: 1.6rem; font-weight: 600; }
+  header p { font-size: 0.82rem; opacity: 0.7; margin-top: 2px; font-weight: 300; }
+
+  .controls { max-width: 760px; margin: 0 auto; padding: 1.5rem 1.5rem 0; }
+  .range-form { background: white; border-radius: var(--radius); padding: 1.2rem 1.5rem; box-shadow: var(--shadow); display: flex; align-items: flex-end; gap: 1rem; flex-wrap: wrap; }
+  .field { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 100px; }
+  .field label { font-size: 0.72rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-muted); }
+  .field input[type="number"] { border: 1.5px solid var(--ink-faint); border-radius: 8px; padding: 0.55rem 0.8rem; font-family: 'DM Sans', sans-serif; font-size: 1rem; color: var(--ink); background: var(--cream); transition: border-color 0.15s; width: 100%; }
+  .field input[type="number"]:focus { outline: none; border-color: var(--french-blue); }
+  .btn-generate { background: var(--french-blue); color: white; border: none; border-radius: 8px; padding: 0.58rem 1.4rem; font-family: 'DM Sans', sans-serif; font-size: 0.9rem; font-weight: 500; cursor: pointer; transition: background 0.15s, transform 0.1s; white-space: nowrap; flex-shrink: 0; }
+  .btn-generate:hover { background: #002070; }
+  .btn-generate:active { transform: scale(0.97); }
+  .range-hint { font-size: 0.78rem; color: var(--ink-muted); margin-top: 0.6rem; padding: 0 0.2rem; }
+
+  .score-bar { max-width: 760px; margin: 1rem auto 0; padding: 0 1.5rem; display: none; align-items: center; gap: 1rem; }
+  .score-bar.visible { display: flex; }
+  .score-label { font-size: 0.78rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-muted); }
+  .score-num { font-family: 'Playfair Display', serif; font-size: 1.5rem; font-weight: 600; color: var(--french-blue); min-width: 70px; }
+  .progress-track { flex: 1; height: 4px; background: var(--cream-dark); border-radius: 2px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--french-blue); border-radius: 2px; transition: width 0.4s ease; width: 0%; }
+
+  .cards { max-width: 760px; margin: 1.2rem auto 3rem; padding: 0 1.5rem; display: flex; flex-direction: column; gap: 12px; }
+  .card { background: white; border-radius: var(--radius); padding: 1.2rem 1.5rem; box-shadow: var(--shadow); border-left: 4px solid transparent; transition: border-color 0.2s; }
+  .card.correct { border-left-color: #2e7d32; }
+  .card.wrong { border-left-color: var(--french-red); }
+  .card-top { display: flex; align-items: baseline; gap: 0.8rem; margin-bottom: 0.5rem; }
+  .word-num { font-size: 0.72rem; font-weight: 500; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.06em; flex-shrink: 0; }
+  .english { font-family: 'Playfair Display', serif; font-size: 1.25rem; font-weight: 400; font-style: italic; color: var(--ink); }
+  .hint { font-size: 0.75rem; color: var(--ink-muted); margin-bottom: 0.9rem; }
+
+  .input-row { display: flex; gap: 8px; align-items: center; }
+  .input-row input { flex: 1; border: 1.5px solid var(--ink-faint); border-radius: 8px; padding: 0.5rem 0.9rem; font-family: 'DM Sans', sans-serif; font-size: 0.95rem; color: var(--ink); background: var(--cream); transition: border-color 0.15s; }
+  .input-row input:focus { outline: none; border-color: var(--french-blue); }
+  .input-row input:disabled { opacity: 0.6; cursor: not-allowed; }
+  .btn-check { background: transparent; border: 1.5px solid var(--french-blue); color: var(--french-blue); border-radius: 8px; padding: 0.5rem 1rem; font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 500; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .btn-check:hover { background: var(--french-blue); color: white; }
+  .btn-check:disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
+
+  .feedback { margin-top: 0.7rem; font-size: 0.85rem; padding: 0.55rem 0.9rem; border-radius: 7px; display: none; font-weight: 500; }
+  .feedback.ok { display: block; background: var(--success-bg); color: var(--success-text); }
+  .feedback.no { display: block; background: var(--error-bg); color: var(--error-text); }
+
+  .example { margin-top: 0.7rem; display: none; border-top: 1px solid var(--cream-dark); padding-top: 0.7rem; }
+  .example.show { display: block; }
+  .example-fr { font-family: 'Playfair Display', serif; font-style: italic; font-size: 0.88rem; color: var(--ink); line-height: 1.5; }
+  .example-en { font-size: 0.82rem; color: var(--ink-muted); margin-top: 3px; line-height: 1.5; }
+
+  .state-msg { text-align: center; padding: 3rem 1rem; color: var(--ink-muted); }
+  .state-msg .big { font-size: 2rem; margin-bottom: 0.5rem; }
+  .state-msg p { font-size: 0.9rem; }
+
+  @media (max-width: 520px) {
+    .range-form { flex-direction: column; align-items: stretch; }
+    .btn-generate { width: 100%; text-align: center; }
+    header h1 { font-size: 1.3rem; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="header-stripe"></div>
+  <div class="header-inner">
+    <div class="flag"><div class="f-blue"></div><div class="f-white"></div><div class="f-red"></div></div>
+    <div>
+      <h1>French Vocabulary Quiz</h1>
+      <p>2000 most common French words — test yourself</p>
+    </div>
+  </div>
+</header>
+
+<div class="controls">
+  <div class="range-form">
+    <div class="field">
+      <label>From word #</label>
+      <input type="number" id="inp-start" value="1" min="1" max="2000">
+    </div>
+    <div class="field">
+      <label>To word #</label>
+      <input type="number" id="inp-end" value="12" min="1" max="2000">
+    </div>
+    <button class="btn-generate" onclick="loadQuiz()">Generate Quiz →</button>
+  </div>
+  <p class="range-hint">Pick a range (max 100 words). Type one or more French variants separated by <code>|</code> and press Enter or Check.</p>
+</div>
+
+<div class="score-bar" id="score-bar">
+  <span class="score-label">Score</span>
+  <span class="score-num" id="score-num">0 / 0</span>
+  <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+</div>
+
+<div class="cards" id="cards">
+  <div class="state-msg">
+    <div class="big">🇫🇷</div>
+    <p>Set a word range above and click <strong>Generate Quiz</strong> to begin.</p>
+  </div>
+</div>
+
+<script>
+let score = 0, answered = [], total = 0;
+
+async function loadQuiz() {
+  const start = parseInt(document.getElementById('inp-start').value);
+  const end   = parseInt(document.getElementById('inp-end').value);
+  const cards = document.getElementById('cards');
+  if (isNaN(start) || isNaN(end) || start < 1 || end < start) {
+    cards.innerHTML = '<div class="state-msg"><p>Please enter a valid range.</p></div>'; return;
+  }
+  if (end - start > 99) {
+    cards.innerHTML = '<div class="state-msg"><p>Max 100 words at a time.</p></div>'; return;
+  }
+  cards.innerHTML = '<div class="state-msg"><p>Loading…</p></div>';
+  try {
+    const res  = await fetch(`/api/words?start=${start}&end=${end}`);
+    const data = await res.json();
+    if (!res.ok) { cards.innerHTML = `<div class="state-msg"><p>Error: ${data.detail}</p></div>`; return; }
+    renderQuiz(data.words);
+  } catch(e) {
+    cards.innerHTML = '<div class="state-msg"><p>Network error — is the server running?</p></div>';
+  }
+}
+
+function renderQuiz(words) {
+  score = 0; total = words.length; answered = new Array(total).fill(false);
+  updateScore();
+  const cards = document.getElementById('cards');
+  cards.innerHTML = '';
+  words.forEach((w, i) => {
+    const variants = w.french.length > 1
+      ? ['masculine','feminine','variant 3'].slice(0, w.french.length).join(' | ')
+      : '';
+    const card = document.createElement('div');
+    card.className = 'card'; card.id = `card-${i}`;
+    card.innerHTML = `
+      <div class="card-top">
+        <span class="word-num">#${w.num}</span>
+        <span class="english">${w.english}</span>
+      </div>
+      ${variants ? `<div class="hint">${variants}</div>` : ''}
+      <div class="input-row">
+        <input type="text" id="inp-${i}" placeholder="Type in French…" autocomplete="off" autocorrect="off" spellcheck="false">
+        <button class="btn-check" id="btn-${i}">Check</button>
+      </div>
+      <div class="feedback" id="fb-${i}"></div>
+      <div class="example" id="ex-${i}">
+        <div class="example-fr">${w.example_fr}</div>
+        <div class="example-en">${w.example_en}</div>
+      </div>`;
+    cards.appendChild(card);
+    card.querySelector('input').addEventListener('keydown', e => { if (e.key==='Enter') checkAnswer(i, w.num); });
+    card.querySelector('button').addEventListener('click', () => checkAnswer(i, w.num));
+  });
+}
+
+async function checkAnswer(i, wordNum) {
+  if (answered[i]) return;
+  const inp = document.getElementById(`inp-${i}`);
+  const answer = inp.value.trim();
+  if (!answer) return;
+  const res  = await fetch('/api/check', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({num: wordNum, answer}) });
+  const data = await res.json();
+  answered[i] = true;
+  if (data.correct) score++;
+  updateScore();
+  const fb   = document.getElementById(`fb-${i}`);
+  const ex   = document.getElementById(`ex-${i}`);
+  const card = document.getElementById(`card-${i}`);
+  fb.textContent = data.correct ? `✓ Correct! ${data.correct_answers.join(' | ')}` : `✗ The answer is: ${data.correct_answers.join(' | ')}`;
+  fb.className   = 'feedback ' + (data.correct ? 'ok' : 'no');
+  ex.className   = 'example show';
+  card.classList.add(data.correct ? 'correct' : 'wrong');
+  inp.disabled = true;
+  document.getElementById(`btn-${i}`).disabled = true;
+}
+
+function updateScore() {
+  const done = answered.filter(Boolean).length;
+  document.getElementById('score-num').textContent = `${score} / ${total}`;
+  document.getElementById('progress-fill').style.width = total > 0 ? `${(done/total)*100}%` : '0%';
+  document.getElementById('score-bar').classList.toggle('visible', total > 0);
+}
+</script>
+</body>
+</html>
