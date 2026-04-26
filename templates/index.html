@@ -202,10 +202,7 @@
       showError('Please enter a valid range between 1 and 2000.');
       return;
     }
-    if (end - start > 99) {
-      showError('Maximum range is 100 words at a time.');
-      return;
-    }
+
 
     const btn = document.getElementById('load-btn');
     btn.disabled = true;
