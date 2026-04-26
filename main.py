@@ -19,7 +19,7 @@ WORDS_BY_NUM: dict[int, dict] = {w["num"]: w for w in ALL_WORDS}
 # ── helpers ───────────────────────────────────────────────────────────────────
 
 def normalize(text: str) -> str:
-    """Lowercase, strip accents, keep only letters."""
+    """Lowercase, strip accents, keep only letters and spaces."""
     text = text.strip().lower()
     text = unicodedata.normalize("NFD", text)
     text = "".join(c for c in text if unicodedata.category(c) != "Mn")
@@ -63,13 +63,14 @@ def check_answer(body: CheckRequest):
         raise HTTPException(404, f"Word {body.num} not found")
 
     accepted = [normalize(f) for f in word["french"]]
-    user_tokens = [
+    # Check the whole phrase first, then split by | , / for multi-form entries
+    user_attempts = [normalize(body.answer)] + [
         normalize(t)
-        for t in body.answer.replace("|", " ").replace("/", " ").replace(",", " ").split()
+        for t in body.answer.replace("|", ",").replace("/", ",").split(",")
         if t.strip()
     ]
 
-    correct = any(u in accepted for u in user_tokens)
+    correct = any(u in accepted for u in user_attempts)
 
     return {
         "correct": correct,
