@@ -17,25 +17,16 @@
 
     .container { max-width: 680px; margin: 0 auto; }
 
-    h1 {
-      font-size: 1.6rem;
-      font-weight: 600;
-      margin-bottom: 0.25rem;
-    }
+    h1 { font-size: 1.6rem; font-weight: 600; margin-bottom: 0.25rem; }
+    .subtitle { font-size: 0.9rem; color: #666; margin-bottom: 2rem; }
 
-    .subtitle {
-      font-size: 0.9rem;
-      color: #666;
-      margin-bottom: 2rem;
-    }
-
-    /* Range picker */
+    /* Range form */
     .range-form {
       background: #fff;
       border: 1px solid #e0e0d8;
       border-radius: 12px;
       padding: 1.25rem;
-      margin-bottom: 1.5rem;
+      margin-bottom: 1rem;
       display: flex;
       gap: 1rem;
       align-items: flex-end;
@@ -43,7 +34,6 @@
     }
 
     .field { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 100px; }
-
     label { font-size: 0.78rem; color: #666; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; }
 
     input[type="number"] {
@@ -71,13 +61,48 @@
     .btn:hover { background: #333; }
     .btn:disabled { background: #aaa; cursor: default; }
 
-    /* Score bar */
-    .score-bar {
+    /* Toggle */
+    .toggle-row {
       display: flex;
       align-items: center;
       gap: 0.75rem;
-      margin-bottom: 1.25rem;
+      margin-bottom: 1.5rem;
     }
+
+    .toggle-label { font-size: 0.85rem; color: #666; }
+    .toggle-label.active { color: #1a1a1a; font-weight: 600; }
+
+    .toggle {
+      position: relative;
+      width: 48px;
+      height: 26px;
+      flex-shrink: 0;
+    }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute;
+      inset: 0;
+      background: #1a1a1a;
+      border-radius: 26px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .toggle-slider:before {
+      content: "";
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      left: 3px;
+      top: 3px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform 0.2s;
+    }
+    .toggle input:checked + .toggle-slider { background: #1a1a1a; }
+    .toggle input:checked + .toggle-slider:before { transform: translateX(22px); }
+
+    /* Score bar */
+    .score-bar { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.25rem; }
     .score-label { font-size: 0.9rem; color: #666; }
     .score-val { font-size: 1.3rem; font-weight: 600; }
 
@@ -91,7 +116,7 @@
     }
 
     .word-num { font-size: 0.75rem; color: #aaa; margin-bottom: 2px; }
-    .english-word { font-size: 1.25rem; font-weight: 600; margin-bottom: 2px; }
+    .question-word { font-size: 1.25rem; font-weight: 600; margin-bottom: 2px; }
     .hint { font-size: 0.78rem; color: #aaa; margin-bottom: 0.75rem; }
 
     .input-row { display: flex; gap: 0.5rem; margin-bottom: 0.5rem; }
@@ -130,18 +155,11 @@
     .feedback.correct { background: #eaf7ee; color: #1a7f3c; display: block; }
     .feedback.wrong   { background: #fdecea; color: #b91c1c; display: block; }
 
-    .example {
-      font-size: 0.82rem;
-      color: #666;
-      line-height: 1.6;
-      display: none;
-      margin-top: 0.25rem;
-    }
+    .example { font-size: 0.82rem; color: #666; line-height: 1.6; display: none; margin-top: 0.25rem; }
     .example.show { display: block; }
     .example em { color: #333; font-style: italic; }
 
     .empty { text-align: center; color: #aaa; padding: 3rem 0; font-size: 0.95rem; }
-
     .error-msg { color: #b91c1c; font-size: 0.85rem; margin-top: 0.5rem; display: none; }
     .error-msg.show { display: block; }
   </style>
@@ -149,7 +167,7 @@
 <body>
 <div class="container">
   <h1>🇫🇷 French Quiz</h1>
-  <p class="subtitle">2000 most common French words — type the French translation and check your answer.</p>
+  <p class="subtitle">2000 most common French words — test yourself in both directions.</p>
 
   <div class="range-form">
     <div class="field">
@@ -162,6 +180,17 @@
     </div>
     <button class="btn" id="load-btn" onclick="loadQuiz()">Start quiz</button>
   </div>
+
+  <!-- Mode toggle -->
+  <div class="toggle-row">
+    <span class="toggle-label active" id="label-enfr">English → French</span>
+    <label class="toggle">
+      <input type="checkbox" id="mode-toggle" onchange="updateToggleLabels()" />
+      <span class="toggle-slider"></span>
+    </label>
+    <span class="toggle-label" id="label-fren">French → English</span>
+  </div>
+
   <div class="error-msg" id="error-msg"></div>
 
   <div id="score-area" style="display:none">
@@ -180,6 +209,19 @@
   let score = 0;
   let total = 0;
   let answered = {};
+  let currentWords = [];
+
+  function getMode() {
+    return document.getElementById('mode-toggle').checked ? 'fr_to_en' : 'en_to_fr';
+  }
+
+  function updateToggleLabels() {
+    const fr = getMode() === 'fr_to_en';
+    document.getElementById('label-enfr').classList.toggle('active', !fr);
+    document.getElementById('label-fren').classList.toggle('active', fr);
+    // Re-render quiz if already loaded
+    if (currentWords.length) renderQuiz(currentWords);
+  }
 
   function showError(msg) {
     const el = document.getElementById('error-msg');
@@ -203,7 +245,6 @@
       return;
     }
 
-
     const btn = document.getElementById('load-btn');
     btn.disabled = true;
     btn.textContent = 'Loading…';
@@ -214,8 +255,8 @@
         const err = await res.json();
         throw new Error(err.detail || 'Failed to load words.');
       }
-      const words = await res.json();
-      renderQuiz(words);
+      currentWords = await res.json();
+      renderQuiz(currentWords);
     } catch (e) {
       showError(e.message);
     } finally {
@@ -228,6 +269,8 @@
     score = 0;
     total = words.length;
     answered = {};
+    const mode = getMode();
+    const isFrToEn = mode === 'fr_to_en';
 
     document.getElementById('score-area').style.display = 'block';
     document.getElementById('score-val').textContent = `0 / ${total}`;
@@ -236,16 +279,18 @@
     area.innerHTML = '';
 
     words.forEach(w => {
-      const hint = w.french.length > 1 ? w.french.map(() => 'masc.|fem.').slice(0,1).join('') + 'masculine | feminine' : '';
+      const questionText = isFrToEn ? w.french.join(' | ') : w.english;
+      const placeholder  = isFrToEn ? 'Type in English…' : 'Type in French…';
+      const hint         = !isFrToEn && w.french.length > 1 ? 'masculine | feminine' : '&nbsp;';
 
       const card = document.createElement('div');
       card.className = 'card';
       card.innerHTML = `
         <div class="word-num">Word ${w.num}</div>
-        <div class="english-word">${escHtml(w.english)}</div>
-        ${w.french.length > 1 ? '<div class="hint">masculine | feminine</div>' : '<div class="hint">&nbsp;</div>'}
+        <div class="question-word">${escHtml(questionText)}</div>
+        <div class="hint">${hint}</div>
         <div class="input-row">
-          <input type="text" id="inp-${w.num}" placeholder="Type in French…" autocomplete="off" />
+          <input type="text" id="inp-${w.num}" placeholder="${placeholder}" autocomplete="off" />
           <button class="check-btn" id="btn-${w.num}">Check</button>
         </div>
         <div class="feedback" id="fb-${w.num}"></div>
@@ -253,10 +298,10 @@
       `;
       area.appendChild(card);
 
-      const inp = card.querySelector(`#inp-${w.num}`);
-      const btn = card.querySelector(`#btn-${w.num}`);
-      inp.addEventListener('keydown', e => { if (e.key === 'Enter') checkAnswer(w.num); });
-      btn.addEventListener('click', () => checkAnswer(w.num));
+      card.querySelector(`#inp-${w.num}`).addEventListener('keydown', e => {
+        if (e.key === 'Enter') checkAnswer(w.num);
+      });
+      card.querySelector(`#btn-${w.num}`).addEventListener('click', () => checkAnswer(w.num));
     });
   }
 
@@ -275,7 +320,7 @@
       const res = await fetch('/api/check', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ num, answer }),
+        body: JSON.stringify({ num, answer, mode: getMode() }),
       });
       const data = await res.json();
 
@@ -303,10 +348,9 @@
   }
 
   function escHtml(str) {
-    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
-  // Allow Enter on range inputs to start quiz
   document.addEventListener('DOMContentLoaded', () => {
     ['start','end'].forEach(id => {
       document.getElementById(id).addEventListener('keydown', e => {

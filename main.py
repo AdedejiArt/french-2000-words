@@ -53,17 +53,30 @@ def get_words(
 class CheckRequest(BaseModel):
     num: int
     answer: str
+    mode: str = "en_to_fr"  # "en_to_fr" or "fr_to_en"
 
 
 @app.post("/api/check")
 def check_answer(body: CheckRequest):
-    """Check a user's answer against all accepted French forms."""
+    """Check a user's answer. Supports both en->fr and fr->en modes."""
     word = WORDS_BY_NUM.get(body.num)
     if not word:
         raise HTTPException(404, f"Word {body.num} not found")
 
-    accepted = [normalize(f) for f in word["french"]]
-    # Check the whole phrase first, then split by | , / for multi-form entries
+    if body.mode == "fr_to_en":
+        # French shown, user types English
+        accepted = [normalize(word["english"])]
+        # Also accept slash-separated variants e.g. "To have to/To owe"
+        accepted += [
+            normalize(t)
+            for t in word["english"].replace("/", ",").split(",")
+            if t.strip()
+        ]
+    else:
+        # English shown, user types French
+        accepted = [normalize(f) for f in word["french"]]
+
+    # Check whole phrase first, then split by | , / for multi-form entries
     user_attempts = [normalize(body.answer)] + [
         normalize(t)
         for t in body.answer.replace("|", ",").replace("/", ",").split(",")
@@ -74,7 +87,7 @@ def check_answer(body: CheckRequest):
 
     return {
         "correct": correct,
-        "accepted": word["french"],
+        "accepted": word["french"] if body.mode == "en_to_fr" else [word["english"]],
         "example_fr": word["example_fr"],
         "example_en": word["example_en"],
     }
